@@ -75,16 +75,16 @@ userSchema.pre("save", async function (next) {
 });
 
 userSchema.methods = {
-  // method which will help us compare plain password with hashed password and returns true or false
+  // method to compare plain password with hashed password 
   comparePassword: async function (plainPassword) {
     return await bcrypt.compare(plainPassword, this.password);
   },
 
-  // Will generate a JWT token with user id as payload
+  // to generate a JWT token with userid 
   generateJWTToken: async function () {
     return await jwt.sign(
       {
-        id: this._id_,
+        id: this._id,
         email: this.email,
         subscription: this.subscription,
         role: this.role,
@@ -95,6 +95,7 @@ userSchema.methods = {
       }
     );
   },
+
 };
 
 const User = model("User", userSchema);
