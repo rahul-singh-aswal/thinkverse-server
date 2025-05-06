@@ -93,7 +93,6 @@ const logout = (req, res) => {
       httpOnly: true, // Prevent access to the cookie via client-side JavaScript
     });
 
-    // Send a success response to the client
     res.status(200).json({
       success: true,
       message: "User logged out successfully",
