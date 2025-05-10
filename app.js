@@ -7,9 +7,15 @@ import userRoutes from "./routes/user.routes.js";
 import errorMiddleware from "./middlewares/error.middleware.js";
 
 
+
 config();
 
 const app = express();
+app.use(express.urlencoded({ extended: true }));
+app.use((req, res, next) => {
+  req.setTimeout(300000); // 5 minutes
+  next();
+});
 
 app.use(express.json());
 
