@@ -18,6 +18,8 @@ const isLoggedIn = async (req, res, next) => {
       return next(new AppError("Unauthorized, please login to continue", 401));
     }
 
+    req.user = userDetails;
+
     next();
   } catch (error) {
     return next(new AppError("Unauthorized, please login to continue", 401));
