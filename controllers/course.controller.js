@@ -17,26 +17,6 @@ export const getAllCourses = async (req, res, next) => {
   }
 };
 
-export const getLecturesByCourseId = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-
-    const course = await Course.findById(id);
-
-    if (!course) {
-      return next(new AppError("Invalid course id or course not found.", 404));
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Course lectures fetched successfully",
-      lectures: course.lectures,
-    });
-  } catch (error) {
-    return next(new AppError(error.message, 500));
-  }
-};
-
 export const createCourse = async (req, res, next) => {
   const { title, description, category, createdBy } = req.body;
 
@@ -102,6 +82,55 @@ export const createCourse = async (req, res, next) => {
   });
 };
 
-export const removeCourse = async (req, res, next) => {};
+export const getLecturesByCourseId = async (req, res, next) => {
+  try {
+    const { id } = req.params;
 
-export const updateCourse = async (req, res, next) => {};
+    const course = await Course.findById(id);
+
+    if (!course) {
+      return next(new AppError("Invalid course id or course not found.", 404));
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Course lectures fetched successfully",
+      lectures: course.lectures,
+    });
+  } catch (error) {
+    return next(new AppError(error.message, 500));
+  }
+};
+
+export const addLecturesByCourseId = async (req, res, next) => {};
+
+export const updateCourseByCourseId = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { title, description, category } = req.body; // add other fields as needed
+
+    const course = await Course.findById(id);
+    if (!course) {
+      return next(new AppError("Course not found", 404));
+    }
+
+    // Update fields if provided
+    if (title) course.title = title;
+    if (description) course.description = description;
+    if (category) course.category = category;
+
+    // Save changes
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Course updated successfully",
+    });
+  } catch (error) {
+    return next(new AppError(error.message, 500));
+  }
+};
+
+export const deleteCourseById = async (req, res, next) => {};
+
+export const removeLectureFromCourse = async (req, res, next) => {};

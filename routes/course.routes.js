@@ -1,10 +1,18 @@
 import { Router } from "express";
 import {
+  addLecturesByCourseId,
   createCourse,
+  deleteCourseById,
   getAllCourses,
   getLecturesByCourseId,
+  removeLectureFromCourse,
+  updateCourseByCourseId,
 } from "../controllers/course.controller.js";
-import { authorizeRoles, isLoggedIn } from "../middlewares/auth.middleware.js";
+import {
+  authorizeRoles,
+  authorizeSubscribers,
+  isLoggedIn,
+} from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/multer.middleware.js";
 
 const router = Router();
@@ -19,6 +27,14 @@ router
     createCourse
   );
 
-router.get("/:id", isLoggedIn, getLecturesByCourseId);
+router
+  .route("/:id")
+  .get(isLoggedIn, authorizeSubscribers, getLecturesByCourseId)
+  .post(isLoggedIn, authorizeRoles("ADMIN"), addLecturesByCourseId)
+  .put(isLoggedIn, authorizeRoles("ADMIN"), updateCourseByCourseId)
+  .delete(isLoggedIn, authorizeRoles("ADMIN"), deleteCourseById);
 
+router
+  .route("/:courseId/Lectures/:lectureId")
+  .delete(isLoggedIn, authorizeRoles("ADMIN"), removeLectureFromCourse);
 export default router;

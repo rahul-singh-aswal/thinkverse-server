@@ -1,7 +1,7 @@
 import { model, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import crypto from 'crypto'
+import crypto from "crypto";
 
 const userSchema = new Schema(
   {
@@ -43,7 +43,10 @@ const userSchema = new Schema(
       // ],
       select: false, // Will not select password upon looking up a document
     },
-
+    subscription: {
+      id: String,
+      status: String,
+    },
     avatar: {
       public_id: {
         type: "String",
@@ -76,12 +79,12 @@ userSchema.pre("save", async function (next) {
 });
 
 userSchema.methods = {
-  // method to compare plain password with hashed password 
+  // method to compare plain password with hashed password
   comparePassword: async function (plainPassword) {
     return await bcrypt.compare(plainPassword, this.password);
   },
 
-  // to generate a JWT token with userid 
+  // to generate a JWT token with userid
   generateJWTToken: async function () {
     return await jwt.sign(
       {
@@ -97,23 +100,22 @@ userSchema.methods = {
     );
   },
 
-    // This will generate a token for password reset
-    generatePasswordResetToken: async function () {
-      // creating a random token using node's built-in crypto module
-      const resetToken = crypto.randomBytes(20).toString('hex');
-  
-      // Again using crypto module to hash the generated resetToken with sha256 algorithm and storing it in database
-      this.forgotPasswordToken = crypto
-        .createHash('sha256')
-        .update(resetToken)
-        .digest('hex');
-  
-      // Adding forgot password expiry to 15 minutes
-      this.forgotPasswordExpiry = Date.now() + 15 * 60 * 1000;
-  
-      return resetToken;
-    },
+  // This will generate a token for password reset
+  generatePasswordResetToken: async function () {
+    // creating a random token using node's built-in crypto module
+    const resetToken = crypto.randomBytes(20).toString("hex");
 
+    // Again using crypto module to hash the generated resetToken with sha256 algorithm and storing it in database
+    this.forgotPasswordToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+    // Adding forgot password expiry to 15 minutes
+    this.forgotPasswordExpiry = Date.now() + 15 * 60 * 1000;
+
+    return resetToken;
+  },
 };
 
 const User = model("User", userSchema);
