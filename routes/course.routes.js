@@ -40,6 +40,6 @@ router
   .delete(isLoggedIn, authorizeRoles("ADMIN"), deleteCourseById);
 
 router
-  .route("/:courseId/Lectures/:lectureId")
+  .route("/:courseId/lectures/:lectureId")
   .delete(isLoggedIn, authorizeRoles("ADMIN"), removeLectureFromCourse);
 export default router;
