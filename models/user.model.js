@@ -46,6 +46,7 @@ const userSchema = new Schema(
     subscription: {
       id: String,
       status: String,
+      validTill : Date,
     },
     avatar: {
       public_id: {

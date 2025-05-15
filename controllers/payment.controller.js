@@ -43,8 +43,15 @@ export const buySubscription = async (req, res, next) => {
       total_count: 12, // 12 means it will charge every month for a 1-year sub.
     });
 
+    const subscriptionStartDate = new Date(); // Ya Razorpay se mil rahi start date
+    const planDurationInDays = 30;
+    const validTill = new Date(
+      subscriptionStartDate.getTime() + planDurationInDays * 24 * 60 * 60 * 1000
+    );
+
     user.subscription.id = subscription.id;
     user.subscription.status = subscription.status;
+    user.subscription.validTill = validTill;
 
     await user.save();
 
@@ -122,7 +129,42 @@ export const verifySubscription = async (req, res, next) => {
  * @ROUTE @POST {{URL}}/api/v1/payments/unsubscribe
  * @ACCESS Private (Logged in user only)
  */
-export const cancelSubscription = async (req, res, next) => {};
+export const cancelSubscription = async (req, res, next) => {
+  try {
+    const { id } = req.user;
+
+    const user = await User.findById(id);
+
+    if (user.role === "ADMIN") {
+      return next(
+        new AppError("Admin does not need to cannot cancel subscription", 400)
+      );
+    }
+
+    const subscriptionId = user.subscription.id;
+
+    try {
+      const subscription = await razorpay.subscriptions.cancel(subscriptionId);
+
+      // Adding the subscription status to the user account
+      user.subscription.status = subscription.status;
+
+      // Saving the user object
+      await user.save();
+    } catch (error) {
+      // Returning error if any, and this error is from razorpay so we have statusCode and message built in
+      return next(new AppError(error.error.description, error.statusCode));
+    }
+
+    // Send the response
+    res.status(200).json({
+      success: true,
+      message: "Subscription canceled successfully",
+    });
+  } catch (error) {
+    return next(new AppError(error.message, 400));
+  }
+};
 
 /**
  * @GET_RAZORPAY_ID
