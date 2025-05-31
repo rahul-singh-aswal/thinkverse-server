@@ -10,7 +10,7 @@ router.route("/subscribe").post(isLoggedIn, buySubscription);
 
 router.route("/verify").post(isLoggedIn, verifySubscription);
 
-router.route("/unsubscibe").post(isLoggedIn, cancelSubscription);
+router.route("/unsubscribe").post(isLoggedIn, cancelSubscription);
 
 router.route("/").get(isLoggedIn, authorizeRoles("ADMIN"), allPayments);
 

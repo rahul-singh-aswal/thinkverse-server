@@ -33,7 +33,7 @@ router
   .post(
     isLoggedIn,
     authorizeRoles("ADMIN"),
-    upload.single("lecture"),
+    // upload.single("lecture"),
     addLecturesByCourseId
   )
   .put(isLoggedIn, authorizeRoles("ADMIN"), updateCourseByCourseId)
