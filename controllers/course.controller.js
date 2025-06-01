@@ -28,76 +28,53 @@ export const getAllCourses = async (req, res, next) => {
  * @ACCESS Private (admin only)
  */
 export const createCourse = async (req, res, next) => {
-  const { title, description, category, createdBy } = req.body;
+  try {
+    const { title, description, category, createdBy, thumbnail } = req.body;
 
-  if (!title || !description || !category || !createdBy) {
-    return next(new AppError("All fields are required"));
-  }
+    if (!title || !description || !category || !createdBy || !thumbnail) {
+      return next(new AppError("All fields are required"));
+    }
 
-  if (
-    await Course.findOne({
-      title: title,
-      createdBy: createdBy,
-    } )
-  ) {
-    return next(new AppError("Course with same title from same instructor already exists"));
-  }
-  const course = await Course.create({
-    title,
-    description,
-    category,
-    createdBy,
-    thumbnail: {
-      public_id: "Dummy",
-      secure_id: "Dummy",
-    },
-  });
-
-  if (!course) {
-    return next(
-      new AppError("Course could not created, please try again", 500)
-    );
-  }
-
-  if (req.file) {
-    try {
-      const result = await cloudinary.v2.uploader.upload(req.file.path, {
-        folder: "lms", // Save files in a folder named lms
-      });
-
-      // If success
-      if (result) {
-        // Set the public_id and secure_url in array
-        course.thumbnail.public_id = result.public_id;
-        course.thumbnail.secure_url = result.secure_url;
-      }
-
-      // After successful upload remove the file from local storage
-      fs.rm(`uploads/${req.file.filename}`);
-    } catch (error) {
-      // Empty the uploads directory without deleting the uploads directory
-      for (const file of await fs.readdir("uploads/")) {
-        await fs.unlink(path.join("uploads/", file));
-      }
-
-      // Send the error message
+    if (
+      await Course.findOne({
+        title: title,
+        createdBy: createdBy,
+      })
+    ) {
       return next(
         new AppError(
-          JSON.stringify(error) || "File not uploaded, please try again",
-          400
+          "Course with same title from same instructor already exists"
         )
       );
     }
+    const course = await Course.create({
+      title,
+      description,
+      category,
+      createdBy,
+      thumbnail: {
+        public_id: thumbnail.public_id,
+        secure_url: thumbnail.secure_url,
+      },
+    });
+
+    if (!course) {
+      return next(
+        new AppError("Course could not created, please try again", 500)
+      );
+    }
+
+    // Save the changes
+    await course.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Course created successfully",
+      course,
+    });
+  } catch (error) {
+    return next(new AppError("Something went wrong, please try again", 500));
   }
-
-  // Save the changes
-  await course.save();
-
-  res.status(201).json({
-    success: true,
-    message: "Course created successfully",
-    course,
-  });
 };
 
 /**
@@ -130,20 +107,68 @@ export const getLecturesByCourseId = async (req, res, next) => {
  * @ROUTE @PUT {{URL}}/api/v1/courses/:id
  * @ACCESS Private (Admin only)
  */
+// export const updateCourseByCourseId = async (req, res, next) => {
+//   try {
+//     const { id } = req.params;
+//      const { title, description, category, createdBy, thumbnail } = req.body;
+
+//     if (!title || !description || !category || !createdBy || !thumbnail) {
+//       return next(new AppError("All fields are required"));
+//     }
+
+//     const course = await Course.findById(id);
+//     if (!course) {
+//       return next(new AppError("Course not found", 404));
+//     }
+
+//     // Update fields if provided
+//     if (title) course.title = title;
+//     if (description) course.description = description;
+//     if (category) course.category = category;
+
+//     // Save changes
+//     await course.save();
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Course updated successfully",
+//     });
+//   } catch (error) {
+//     return next(new AppError(error.message, 500));
+//   }
+// };
+
 export const updateCourseByCourseId = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description, category } = req.body; // add other fields as needed
+    const { title, description, category, createdBy, thumbnail } = req.body;
+
+  
+    if (!title && !description && !category && !createdBy && !thumbnail) {
+      return next(new AppError("At least one field is required for update", 400));
+    }
 
     const course = await Course.findById(id);
     if (!course) {
       return next(new AppError("Course not found", 404));
     }
 
-    // Update fields if provided
+    // Update fields only if provided
     if (title) course.title = title;
     if (description) course.description = description;
     if (category) course.category = category;
+    if (createdBy) course.createdBy = createdBy;
+    
+    if (thumbnail) {
+      // Validate thumbnail structure if provided
+      if (!thumbnail.public_id || !thumbnail.secure_url) {
+        return next(new AppError("Thumbnail must have public_id and secure_url", 400));
+      }
+      course.thumbnail = {
+        public_id: thumbnail.public_id,
+        secure_url: thumbnail.secure_url
+      };
+    }
 
     // Save changes
     await course.save();
@@ -151,12 +176,21 @@ export const updateCourseByCourseId = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "Course updated successfully",
+      course: {
+        id: course._id,
+        title: course.title,
+        description: course.description,
+        category: course.category,
+        createdBy: course.createdBy,
+        thumbnail: course.thumbnail,
+        
+      }
     });
   } catch (error) {
+    console.error("Update course error:", error);
     return next(new AppError(error.message, 500));
   }
 };
-
 /**
  * @DELETE_COURSE_BY_ID
  * @ROUTE @DELETE {{URL}}/api/v1/courses/:id
@@ -190,7 +224,6 @@ export const addLecturesByCourseId = async (req, res, next) => {
   try {
     const { title, description, lecture } = req.body;
     const { id } = req.params;
-    
 
     if (!title || !description || !lecture?.public_id || !lecture?.secure_url) {
       return next(new AppError("All lecture fields are mandatory", 400));
